@@ -40,12 +40,14 @@ class TrainingConfig:
     test_size: float = 0.20
     validation_size: float = 0.25
     random_state: int = 42
+    split_mode: str = "stratified"  # "stratified" or "time"
 
 
 @dataclass
 class ThresholdConfig:
     max_false_positive_rate: float = 0.02
     candidate_steps: int = 500
+    review_threshold: float | None = None  # set for 3-way APPROVE/REVIEW/DECLINE
 
 
 @dataclass

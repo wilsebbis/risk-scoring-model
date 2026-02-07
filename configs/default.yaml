@@ -3,7 +3,13 @@ data:
   csv_path: data/transactions.csv
   target_col: is_fraud
   id_col: transaction_id
-  snowflake_query: ""
+  # Local dev uses CSV; Snowflake path is for production realism.
+  snowflake_query: |
+    -- Example: replace with your production query
+    SELECT t.*, f.is_fraud
+    FROM analytics.transactions t
+    LEFT JOIN labels.fraud_flags f USING (transaction_id)
+    WHERE t.created_at >= DATEADD(month, -6, CURRENT_DATE())
 
 model:
   xgboost:
@@ -23,10 +29,12 @@ training:
   test_size: 0.20
   validation_size: 0.25
   random_state: 42
+  split_mode: stratified   # or "time" for temporal evaluation
 
 threshold:
   max_false_positive_rate: 0.02
   candidate_steps: 500
+  review_threshold: null    # set e.g. 0.5 for 3-way APPROVE/REVIEW/DECLINE
 
 costs:
   chargeback_cost: 150.0

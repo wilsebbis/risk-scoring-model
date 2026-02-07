@@ -11,6 +11,18 @@ from .config import CostConfig
 from .evaluation import threshold_metrics
 
 
+PSI_TRIAGE_POLICY = {
+    "ok": "< 0.10",
+    "investigate": "0.10 – 0.25",
+    "retrain": "> 0.25",
+}
+
+LABEL_DELAY_NOTE = (
+    "Fraud labels typically arrive 30–90 days post-transaction. "
+    "Recall metrics in this window are provisional."
+)
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Monitor score drift and live performance")
     parser.add_argument("--baseline", required=True, help="CSV with historical scores")
@@ -59,6 +71,16 @@ def _population_stability_index(
     return float(psi)
 
 
+def _psi_triage_action(psi: float) -> str:
+    """Determine triage action based on PSI value."""
+    if psi < 0.10:
+        return "OK"
+    elif psi <= 0.25:
+        return "investigate"
+    else:
+        return "retrain"
+
+
 def _summary(values: np.ndarray) -> dict[str, float]:
     return {
         "count": int(len(values)),
@@ -83,13 +105,22 @@ def main() -> None:
     baseline_scores = baseline_df[args.score_col].astype(float).to_numpy()
     current_scores = current_df[args.score_col].astype(float).to_numpy()
 
+    psi = _population_stability_index(baseline_scores, current_scores)
+    action = _psi_triage_action(psi)
+
     report: dict[str, object] = {
         "score_summary": {
             "baseline": _summary(baseline_scores),
             "current": _summary(current_scores),
         },
         "drift": {
-            "psi": _population_stability_index(baseline_scores, current_scores),
+            "psi": psi,
+        },
+        "triage": {
+            "psi": psi,
+            "action": action,
+            "policy": PSI_TRIAGE_POLICY,
+            "label_delay_note": LABEL_DELAY_NOTE,
         },
         "threshold": float(args.threshold),
     }
@@ -109,7 +140,10 @@ def main() -> None:
     output_path.write_text(json.dumps(report, indent=2, sort_keys=True))
 
     print(f"Monitoring report written to {output_path}")
-    print(f"PSI: {report['drift']['psi']:.4f}")
+    print(f"PSI: {psi:.4f}  →  Action: {action}")
+    if action != "OK":
+        print(f"  ⚠ {PSI_TRIAGE_POLICY[action]}")
+    print(f"  Note: {LABEL_DELAY_NOTE}")
 
 
 if __name__ == "__main__":
