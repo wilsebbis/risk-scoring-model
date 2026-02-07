@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "risk-scoring-model"
+version = "0.1.0"
+description = "Fraud/risk scoring model with threshold optimization and monitoring"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "scikit-learn>=1.4",
+  "xgboost>=2.1",
+  "pyyaml>=6.0",
+  "joblib>=1.4",
+  "snowflake-connector-python[pandas]>=3.12",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

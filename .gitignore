@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+
+artifacts/*
+!artifacts/.gitkeep
+
+data/*.csv
+
+.DS_Store
